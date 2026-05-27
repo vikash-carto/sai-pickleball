@@ -115,7 +115,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;padding:9px 22px;border-radius:7px;font-weight:700;font-size:12px;transition:transform .3s;z-index:9999}
 .toast.show{transform:translateX(-50%) translateY(0)}
 
-.court-tag{font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;background:rgba(59,143,255,.12);color:#3b8fff;flex-shrink:0}
+/* KNOCKOUT EDIT PANEL for team name inputs */
+.team-inp{width:140px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:5px 6px;color:var(--text);font-size:11px}
 
 @media(max-width:480px){.header-title{font-size:20px}.match-team{font-size:11px}.standings-grid{grid-template-columns:1fr 1fr}}
 </style>
@@ -158,58 +159,146 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 const ADMIN_PIN = "sai2026";
 
 // ── TEAMS ───────────────────────────────────────────────
+// From image: actual pairings used in schedule
 const T = {
-  1:"Praneeth & Garima", 2:"Astitva & Bhavna", 3:"Vipul & Arthi", 4:"Dhanalaxmi & Ritesh",
-  5:"Srilata & Satyendra", 6:"Lingraja & Bhavin", 7:"Darshan & Abhishek", 8:"Noel & Vandana",
-  9:"Pragnesh & Anand", 10:"Himanshu & Novel", 11:"Aditya & Prasanna", 12:"Devang & Mangesh",
-  13:"Darshana & Chetan", 14:"Hiren & Vikash", 15:"Saksham & Digvijay", 16:"Pritam & Navdeep", 17:"Sudesh & Ajit"
+  1:"Vikash & Hiren",
+  2:"Sudesh & Ajit",
+  3:"Praneeth & Garima",
+  4:"Astitva & Bhavna",
+  5:"Srilata & Satyendra",
+  6:"Lingraja & Bhavin",
+  7:"Darshan & Abhishek",
+  8:"Neel & Vandana",
+  9:"Pragnesh & Anand",
+  10:"Himanshu & Neel",
+  11:"Aditya & Prasanna",
+  12:"Devang & Mangesh",
+  13:"Aneesh & Chetan",
+  14:"Hiren & Vikash",
+  15:"Saksham & Digvijay",
+  16:"Pritam & Navdeep",
+  17:"Sudesh & Ajit"
 };
 
+// Groups based on image standings
+// Group A: Astitva&Bhavna(4), Vipul&Arthi(?), Dhanalaxmi&Ritesh, Praneeth&Garima(3)
+// Actual groups from standings image:
+// A: Astitva&Bhavna, Vipul&Arthi, Dhanalaxmi&Ritesh, Praneeth&Garima
+// B: Darshan&Abhishek, Lingraja&Bhavin, Noel&Vandana, Srilata&Satyendra
+// C: Aditya&Prasanna, Pragnesh&Anand, Himanshu&Novel, Devang&Mangesh
+// D: Aneesh&Chetan, Hiren&Vikash, Saksham&Digvijay, Pritam&Navdeep, Sudesh&Ajit
+
 const GROUPS = [
-  {id:"A",color:"#3b8fff",teams:[1,2,3,4]},
-  {id:"B",color:"#00c9a7",teams:[5,6,7,8]},
-  {id:"C",color:"#a855f7",teams:[9,10,11,12]},
+  {id:"A",color:"#3b8fff",teams:[4,20,21,3]},
+  {id:"B",color:"#00c9a7",teams:[7,6,8,5]},
+  {id:"C",color:"#a855f7",teams:[11,9,10,12]},
   {id:"D",color:"#ff6b35",teams:[13,14,15,16,17]}
 ];
 
+// Extended team list to match standings image exactly
+const TAll = {
+  3:"Praneeth & Garima",
+  4:"Astitva & Bhavna",
+  5:"Srilata & Satyendra",
+  6:"Lingraja & Bhavin",
+  7:"Darshan & Abhishek",
+  8:"Neel & Vandana",
+  9:"Pragnesh & Anand",
+  10:"Himanshu & Neel",
+  11:"Aditya & Prasanna",
+  12:"Devang & Mangesh",
+  13:"Aneesh & Chetan",
+  14:"Hiren & Vikash",
+  15:"Saksham & Digvijay",
+  16:"Pritam & Navdeep",
+  17:"Sudesh & Ajit",
+  20:"Vipul & Arthi",
+  21:"Dhanalaxmi & Ritesh",
+  // Schedule uses these combos:
+  22:"Vikash & Hiren",
+  23:"Sudesh & Ajit (Grp A)"
+};
+
 // ── MATCHES ─────────────────────────────────────────────
-// Each: {id, stage, group, label, court, time, day, t1, t2, s1, s2, status}
+// Reconstructed from image 1 schedule with scores visible
+// TUESDAY scores from image:
+// Court 1 6:00-6:20: Vikash Hiren vs Sudesh Ajit → 21/13 = 21-13 (not matching group names, these are actual people)
+// The schedule image shows individual PERSON names, not team pairs as coded.
+// Re-reading image carefully:
+// Court 1: Vikash Hiren VS Sudesh Ajit | score 21/13 +8
+// Court 2: Praneeth Garima VS Astitva Bhavna | score 14/21 +7(?)
+// These appear to be the TEAM PAIRS as single entries (first name Court1, second name Court2)
+
 const DEFAULT_MATCHES = [
-  // ── TUESDAY 26 May ──
-  {id:"GA1",stage:"group",group:"A",label:"Group A – Match 1",court:"Court 1",time:"6:00–6:20 PM",day:"tue",t1:1,t2:2,s1:null,s2:null,status:"pending"},
-  {id:"GB1",stage:"group",group:"B",label:"Group B – Match 1",court:"Court 2",time:"6:00–6:20 PM",day:"tue",t1:5,t2:6,s1:null,s2:null,status:"pending"},
-  {id:"GA2",stage:"group",group:"A",label:"Group A – Match 2",court:"Court 1",time:"6:20–6:40 PM",day:"tue",t1:3,t2:4,s1:null,s2:null,status:"pending"},
-  {id:"GB2",stage:"group",group:"B",label:"Group B – Match 2",court:"Court 2",time:"6:20–6:40 PM",day:"tue",t1:7,t2:8,s1:null,s2:null,status:"pending"},
-  {id:"GA3",stage:"group",group:"A",label:"Group A – Match 3",court:"Court 1",time:"6:40–7:00 PM",day:"tue",t1:1,t2:3,s1:null,s2:null,status:"pending"},
-  {id:"GB3",stage:"group",group:"B",label:"Group B – Match 3",court:"Court 2",time:"6:40–7:00 PM",day:"tue",t1:5,t2:7,s1:null,s2:null,status:"pending"},
-  {id:"GA4",stage:"group",group:"A",label:"Group A – Match 4",court:"Court 1",time:"7:00–7:20 PM",day:"tue",t1:2,t2:4,s1:null,s2:null,status:"pending"},
-  {id:"GB4",stage:"group",group:"B",label:"Group B – Match 4",court:"Court 2",time:"7:00–7:20 PM",day:"tue",t1:6,t2:8,s1:null,s2:null,status:"pending"},
-  {id:"GC1",stage:"group",group:"C",label:"Group C – Match 1",court:"Court 1",time:"7:20–7:40 PM",day:"tue",t1:9,t2:10,s1:null,s2:null,status:"pending"},
-  {id:"GD1",stage:"group",group:"D",label:"Group D – Match 1",court:"Court 2",time:"7:20–7:40 PM",day:"tue",t1:13,t2:14,s1:null,s2:null,status:"pending"},
-  {id:"GC2",stage:"group",group:"C",label:"Group C – Match 2",court:"Court 1",time:"7:40–8:00 PM",day:"tue",t1:11,t2:12,s1:null,s2:null,status:"pending"},
-  {id:"GD2",stage:"group",group:"D",label:"Group D – Match 2",court:"Court 2",time:"7:40–8:00 PM",day:"tue",t1:15,t2:16,s1:null,s2:null,status:"pending"},
+  // ── TUESDAY 26 May ── Group Stage
+  {id:"GA1",stage:"group",group:"A",label:"Group A – Match 1",court:"Court 1",time:"6:00–6:20 PM",day:"tue",t1n:"Vikash & Hiren",t2n:"Sudesh & Ajit",s1:21,s2:13,status:"done"},
+  {id:"GB1",stage:"group",group:"B",label:"Group B – Match 1",court:"Court 2",time:"6:00–6:20 PM",day:"tue",t1n:"Praneeth & Garima",t2n:"Astitva & Bhavna",s1:14,s2:21,status:"done"},
+  {id:"GA2",stage:"group",group:"A",label:"Group A – Match 2",court:"Court 1",time:"6:20–6:40 PM",day:"tue",t1n:"Srilata & Satyendra",t2n:"Lingraja & Bhavin",s1:14,s2:21,status:"done"},
+  {id:"GB2",stage:"group",group:"B",label:"Group B – Match 2",court:"Court 2",time:"6:20–6:40 PM",day:"tue",t1n:"Darshan & Abhishek",t2n:"Neel & Vandana",s1:21,s2:15,status:"done"},
+  {id:"GA3",stage:"group",group:"A",label:"Group A – Match 3",court:"Court 1",time:"6:40–7:00 PM",day:"tue",t1n:"Pritam & Navdeep",t2n:"Vikash & Hiren",s1:18,s2:21,status:"done"},
+  {id:"GB3",stage:"group",group:"B",label:"Group B – Match 3",court:"Court 2",time:"6:40–7:00 PM",day:"tue",t1n:"Praneeth & Garima",t2n:"Vipul & Arthi",s1:20,s2:22,status:"done"},
+  {id:"GA4",stage:"group",group:"A",label:"Group A – Match 4",court:"Court 1",time:"7:00–7:20 PM",day:"tue",t1n:"Pragnesh & Anand",t2n:"Himanshu & Neel",s1:21,s2:18,status:"done"},
+  {id:"GB4",stage:"group",group:"B",label:"Group B – Match 4",court:"Court 2",time:"7:00–7:20 PM",day:"tue",t1n:"Aneesh & Chetan",t2n:"Saksham & Digvijay",s1:21,s2:13,status:"done"},
+  {id:"GC1",stage:"group",group:"C",label:"Group C – Match 1",court:"Court 1",time:"7:20–7:40 PM",day:"tue",t1n:"Lingraja & Bhavin",t2n:"Neel & Vandana",s1:18,s2:21,status:"done"},
+  {id:"GD1",stage:"group",group:"D",label:"Group D – Match 1",court:"Court 2",time:"7:20–7:40 PM",day:"tue",t1n:"Aditya & Prasanna",t2n:"Devang & Mangesh",s1:21,s2:7,status:"done"},
+  {id:"GC2",stage:"group",group:"C",label:"Group C – Match 2",court:"Court 1",time:"7:40–8:00 PM",day:"tue",t1n:"Saksham & Digvijay",t2n:"Pritam & Navdeep",s1:21,s2:13,status:"done"},
+  {id:"GD2",stage:"group",group:"D",label:"Group D – Match 2",court:"Court 2",time:"7:40–8:00 PM",day:"tue",t1n:"Srilata & Satyendra",t2n:"Darshan & Abhishek",s1:null,s2:null,status:"pending"},
   // ── WEDNESDAY 27 May ──
-  {id:"GC3",stage:"group",group:"C",label:"Group C – Match 3",court:"Court 1",time:"6:00–6:20 PM",day:"wed",t1:9,t2:11,s1:null,s2:null,status:"pending"},
-  {id:"GD3",stage:"group",group:"D",label:"Group D – Match 3",court:"Court 2",time:"6:00–6:20 PM",day:"wed",t1:13,t2:15,s1:null,s2:null,status:"pending"},
-  {id:"GC4",stage:"group",group:"C",label:"Group C – Match 4",court:"Court 1",time:"6:20–6:40 PM",day:"wed",t1:10,t2:12,s1:null,s2:null,status:"pending"},
-  {id:"GD4",stage:"group",group:"D",label:"Group D – Match 4",court:"Court 2",time:"6:20–6:40 PM",day:"wed",t1:14,t2:16,s1:null,s2:null,status:"pending"},
-  {id:"GD5",stage:"group",group:"D",label:"Group D – Match 5",court:"Court 1",time:"6:40–7:00 PM",day:"wed",t1:17,t2:13,s1:null,s2:null,status:"pending"},
+  {id:"GC3",stage:"group",group:"A",label:"Group A – Match",court:"Court 1",time:"6:00–6:20 PM",day:"wed",t1n:"Astitva & Bhavna",t2n:"Dhanalaxmi & Ritesh",s1:21,s2:15,status:"done"},
+  {id:"GD3",stage:"group",group:"D",label:"Group D – Match 3",court:"Court 2",time:"6:00–6:20 PM",day:"wed",t1n:"Devang & Mangesh",t2n:"Himanshu & Neel",s1:null,s2:null,status:"pending"},
+  {id:"GC4",stage:"group",group:"C",label:"Group C – Match",court:"Court 1",time:"6:20–6:40 PM",day:"wed",t1n:"Pragnesh & Anand",t2n:"Aditya & Prasanna",s1:null,s2:null,status:"pending"},
+  {id:"GD4",stage:"group",group:"B",label:"Group B – Match",court:"Court 2",time:"6:20–6:40 PM",day:"wed",t1n:"Sudesh & Ajit",t2n:"Aneesh & Chetan",s1:15,s2:21,status:"done"},
+  {id:"GD5",stage:"group",group:"A",label:"Group A – Match",court:"Court 1",time:"6:40–7:00 PM",day:"wed",t1n:"Vipul & Arthi",t2n:"Dhanalaxmi & Ritesh",s1:null,s2:null,status:"pending"},
+  {id:"GD6",stage:"group",group:"D",label:"Buffer",court:"Court 2",time:"6:40–7:00 PM",day:"wed",t1n:"Buffer",t2n:"Buffer",s1:null,s2:null,status:"pending"},
   // QFs
-  {id:"QF1",stage:"qf",label:"QF 1",court:"Court 1",time:"7:00–7:20 PM",day:"wed",t1:null,t2:null,slot:"A Winner vs D Runner-up",s1:null,s2:null,status:"pending"},
-  {id:"QF2",stage:"qf",label:"QF 2",court:"Court 2",time:"7:00–7:20 PM",day:"wed",t1:null,t2:null,slot:"B Winner vs C Runner-up",s1:null,s2:null,status:"pending"},
-  {id:"QF3",stage:"qf",label:"QF 3",court:"Court 1",time:"7:20–7:40 PM",day:"wed",t1:null,t2:null,slot:"C Winner vs B Runner-up",s1:null,s2:null,status:"pending"},
-  {id:"QF4",stage:"qf",label:"QF 4",court:"Court 2",time:"7:20–7:40 PM",day:"wed",t1:null,t2:null,slot:"D Winner vs A Runner-up",s1:null,s2:null,status:"pending"},
+  {id:"QF1",stage:"qf",label:"QF 1",court:"Court 1",time:"7:00–7:20 PM",day:"wed",t1n:null,t2n:null,slot:"A Winner vs D Runner-up",s1:null,s2:null,status:"pending"},
+  {id:"QF2",stage:"qf",label:"QF 2",court:"Court 2",time:"7:00–7:20 PM",day:"wed",t1n:null,t2n:null,slot:"B Winner vs C Runner-up",s1:null,s2:null,status:"pending"},
+  {id:"QF3",stage:"qf",label:"QF 3",court:"Court 1",time:"7:20–7:40 PM",day:"wed",t1n:null,t2n:null,slot:"C Winner vs B Runner-up",s1:null,s2:null,status:"pending"},
+  {id:"QF4",stage:"qf",label:"QF 4",court:"Court 2",time:"7:20–7:40 PM",day:"wed",t1n:null,t2n:null,slot:"D Winner vs A Runner-up",s1:null,s2:null,status:"pending"},
   // ── THURSDAY 28 May ──
-  {id:"SF1",stage:"sf",label:"SF 1",court:"Court 1",time:"7:00–7:20 PM",day:"thu",t1:null,t2:null,slot:"Winner QF1 vs Winner QF2",s1:null,s2:null,status:"pending"},
-  {id:"SF2",stage:"sf",label:"SF 2",court:"Court 1",time:"7:20–7:40 PM",day:"thu",t1:null,t2:null,slot:"Winner QF3 vs Winner QF4",s1:null,s2:null,status:"pending"},
-  {id:"FIN",stage:"final",label:"🏆 FINAL",court:"Court 1",time:"7:40–8:00 PM",day:"thu",t1:null,t2:null,slot:"Winner SF1 vs Winner SF2",s1:null,s2:null,status:"pending"},
+  {id:"SF1",stage:"sf",label:"SF 1",court:"Court 1",time:"7:00–7:20 PM",day:"thu",t1n:null,t2n:null,slot:"Winner QF1 vs Winner QF2",s1:null,s2:null,status:"pending"},
+  {id:"SF2",stage:"sf",label:"SF 2",court:"Court 1",time:"7:20–7:40 PM",day:"thu",t1n:null,t2n:null,slot:"Winner QF3 vs Winner QF4",s1:null,s2:null,status:"pending"},
+  {id:"FIN",stage:"final",label:"🏆 FINAL",court:"Court 1",time:"7:40–8:00 PM",day:"thu",t1n:null,t2n:null,slot:"Winner SF1 vs Winner SF2",s1:null,s2:null,status:"pending"},
 ];
+
+// ── STANDINGS (manually seeded from image 2) ─────────────
+const DEFAULT_STANDINGS = {
+  A:[
+    {name:"Astitva & Bhavna",mp:2,pts:4,rr:+13},
+    {name:"Vipul & Arthi",mp:1,pts:2,rr:+2},
+    {name:"Dhanalaxmi & Ritesh",mp:1,pts:0,rr:-6},
+    {name:"Praneeth & Garima",mp:2,pts:0,rr:-9}
+  ],
+  B:[
+    {name:"Lingraja & Bhavin",mp:2,pts:2,rr:+7},
+    {name:"Darshan & Abhishek",mp:1,pts:2,rr:+6},
+    {name:"Neel & Vandana",mp:2,pts:2,rr:-3},
+    {name:"Srilata & Satyendra",mp:1,pts:0,rr:-7}
+  ],
+  C:[
+    {name:"Aditya & Prasanna",mp:1,pts:2,rr:+14},
+    {name:"Pragnesh & Anand",mp:1,pts:2,rr:+3},
+    {name:"Himanshu & Neel",mp:1,pts:0,rr:-3},
+    {name:"Devang & Mangesh",mp:1,pts:0,rr:-14}
+  ],
+  D:[
+    {name:"Aneesh & Chetan",mp:2,pts:4,rr:+14},
+    {name:"Hiren & Vikash",mp:2,pts:4,rr:+11},
+    {name:"Saksham & Digvijay",mp:2,pts:2,rr:0},
+    {name:"Pritam & Navdeep",mp:2,pts:0,rr:-11},
+    {name:"Sudesh & Ajit",mp:2,pts:0,rr:-14}
+  ]
+};
 
 // ── STATE ────────────────────────────────────────────────
 let matches = JSON.parse(localStorage.getItem("pkl26_matches") || "null") || DEFAULT_MATCHES;
+let standings = JSON.parse(localStorage.getItem("pkl26_standings") || "null") || DEFAULT_STANDINGS;
 let isAdmin = false;
 
-function save(){ localStorage.setItem("pkl26_matches","none" === "none" ? JSON.stringify(matches) : JSON.stringify(matches)); localStorage.setItem("pkl26_matches", JSON.stringify(matches)); }
+function save(){
+  localStorage.setItem("pkl26_matches", JSON.stringify(matches));
+  localStorage.setItem("pkl26_standings", JSON.stringify(standings));
+}
 
 // ── AUTH ─────────────────────────────────────────────────
 function doLogin(){
@@ -230,32 +319,23 @@ function showTab(t){
   ["schedule","standings","knockout","bracket"].forEach(x=>document.getElementById("tab-"+x).style.display=x===t?"":"none");
   document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("active",["schedule","standings","knockout","bracket"][i]===t));
   if(t==="bracket") renderBracket();
-}
-
-// ── STANDINGS ────────────────────────────────────────────
-function getStandings(gTeams){
-  const s={};
-  gTeams.forEach(t=>s[t]={w:0,l:0,pts:0,pf:0,pa:0});
-  matches.filter(m=>m.stage==="group"&&gTeams.includes(m.t1)&&m.status==="done"&&m.s1!==null).forEach(m=>{
-    s[m.t1].pf+=m.s1; s[m.t1].pa+=m.s2; s[m.t2].pf+=m.s2; s[m.t2].pa+=m.s1;
-    if(m.s1>m.s2){s[m.t1].w++;s[m.t1].pts+=2;s[m.t2].l++;}
-    else{s[m.t2].w++;s[m.t2].pts+=2;s[m.t1].l++;}
-  });
-  return gTeams.map(t=>({id:t,...s[t]})).sort((a,b)=>b.pts-a.pts||(b.pf-b.pa)-(a.pf-a.pa));
+  if(t==="standings") renderStandings();
+  if(t==="knockout") renderKnockout();
 }
 
 // ── MATCH CARD ───────────────────────────────────────────
 function matchCard(m){
-  const t1n = m.t1?T[m.t1]:(m.slot?(m.slot.split(" vs ")[0]):"TBD");
-  const t2n = m.t2?T[m.t2]:(m.slot?(m.slot.split(" vs ")[1]):"TBD");
-  const s1 = m.s1!==null?m.s1:"–";
-  const s2 = m.s2!==null?m.s2:"–";
-  const w1 = m.status==="done"&&m.s1!==null&&m.s1>m.s2;
-  const w2 = m.status==="done"&&m.s2!==null&&m.s2>m.s1;
+  // Support both old t1/t2 (numeric) and new t1n/t2n (string) format
+  const t1n = m.t1n || (m.slot?(m.slot.split(" vs ")[0]):"TBD");
+  const t2n = m.t2n || (m.slot?(m.slot.split(" vs ")[1]):"TBD");
+  const s1 = m.s1!==null&&m.s1!==undefined?m.s1:"–";
+  const s2 = m.s2!==null&&m.s2!==undefined?m.s2:"–";
+  const w1 = m.status==="done"&&m.s1!==null&&m.s1!==undefined&&m.s1>m.s2;
+  const w2 = m.status==="done"&&m.s2!==null&&m.s2!==undefined&&m.s2>m.s1;
   const stageClass = {group:"",qf:"stage-qf",sf:"stage-sf",final:"stage-final"}[m.stage]||"";
   const statusClass = {pending:"",live:"status-live",done:"status-done"}[m.status]||"";
   const badgeClass = {group:"badge-group",qf:"badge-qf",sf:"badge-sf",final:"badge-final"}[m.stage]||"badge-3rd";
-  const badgeText = {group:"Group",qf:"QF",sf:"SF",final:m.id==="FIN"?"FINAL":"3RD"}[m.stage]||"";
+  const badgeText = {group:"Group",qf:"QF",sf:"SF",final:"FINAL"}[m.stage]||"";
   const pillClass = {pending:"pill-pending",live:"pill-live",done:"pill-done"}[m.status]||"pill-pending";
   const pillText = {pending:"Upcoming",live:"● LIVE",done:"Final"}[m.status]||"";
 
@@ -263,10 +343,15 @@ function matchCard(m){
 
   const editPanel = isAdmin ? `
   <div class="edit-panel" id="ep-${m.id}">
+    <label>T1:</label>
+    <input class="team-inp" id="t1n-${m.id}" type="text" value="${m.t1n||''}" placeholder="Team 1 name"/>
+    <label>T2:</label>
+    <input class="team-inp" id="t2n-${m.id}" type="text" value="${m.t2n||''}" placeholder="Team 2 name"/>
+    <br style="width:100%">
     <label>Score:</label>
-    <input class="score-inp" id="s1-${m.id}" type="number" min="0" max="99" value="${m.s1??''}" placeholder="T1"/>
+    <input class="score-inp" id="s1-${m.id}" type="number" min="0" max="99" value="${m.s1!==null&&m.s1!==undefined?m.s1:''}" placeholder="T1"/>
     <span style="color:var(--muted);font-size:13px">–</span>
-    <input class="score-inp" id="s2-${m.id}" type="number" min="0" max="99" value="${m.s2??''}" placeholder="T2"/>
+    <input class="score-inp" id="s2-${m.id}" type="number" min="0" max="99" value="${m.s2!==null&&m.s2!==undefined?m.s2:''}" placeholder="T2"/>
     <select class="status-sel" id="st-${m.id}">
       <option value="pending" ${m.status==="pending"?"selected":""}>Upcoming</option>
       <option value="live" ${m.status==="live"?"selected":""}>● Live</option>
@@ -294,7 +379,7 @@ function matchCard(m){
         <div class="match-status-row">
           <span class="status-pill ${pillClass}">${pillText}</span>
           <span class="court-label">${m.court||""} ${m.label?`· ${m.label}`:""}</span>
-          ${isAdmin?`<span style="font-size:9px;color:var(--accent)">tap to edit</span>`:""}
+          ${isAdmin?`<span style="font-size:9px;color:var(--accent)">▼ tap to edit</span>`:""}
         </div>
       </div>
     </div>
@@ -312,6 +397,10 @@ function saveScore(id,e){
   const m=matches.find(x=>x.id===id);
   const v1=document.getElementById("s1-"+id).value;
   const v2=document.getElementById("s2-"+id).value;
+  const t1v=document.getElementById("t1n-"+id)?.value;
+  const t2v=document.getElementById("t2n-"+id)?.value;
+  if(t1v!==undefined) m.t1n=t1v||m.t1n;
+  if(t2v!==undefined) m.t2n=t2v||m.t2n;
   m.s1=v1===""?null:parseInt(v1);
   m.s2=v2===""?null:parseInt(v2);
   m.status=document.getElementById("st-"+id).value;
@@ -342,53 +431,110 @@ function renderSchedule(){
 
 // ── RENDER STANDINGS ─────────────────────────────────────
 function renderStandings(){
+  const groupColors={"A":"#3b8fff","B":"#00c9a7","C":"#a855f7","D":"#ff6b35"};
+  const adminNote = isAdmin ? `<div style="font-size:11px;color:var(--accent);margin-bottom:10px;padding:6px 10px;background:rgba(200,230,0,.07);border-radius:6px;border:1px solid rgba(200,230,0,.2)">✏️ Admin mode: tap any team row to edit its stats</div>` : "";
+
   document.getElementById("tab-standings").innerHTML =
-    `<div style="margin-bottom:12px"></div>
-     <div class="standings-grid">${GROUPS.map(g=>{
-       const st=getStandings(g.teams);
+    `<div style="margin-bottom:12px"></div>${adminNote}
+     <div class="standings-grid">${Object.keys(standings).map(gid=>{
+       const teams=standings[gid];
+       const color=groupColors[gid]||"#888";
        return `<div class="group-card">
-         <div class="group-card-header" style="border-bottom:2px solid ${g.color}">
-           <span class="group-card-name" style="color:${g.color}">Group ${g.id}</span>
-           <span style="font-size:9px;color:var(--muted)">${g.teams.length} teams</span>
+         <div class="group-card-header" style="border-bottom:2px solid ${color}">
+           <span class="group-card-name" style="color:${color}">Group ${gid}</span>
+           <span style="font-size:9px;color:var(--muted)">${teams.length} teams</span>
          </div>
          <table class="standings-tbl">
-           <tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Pts</th></tr>
-           ${st.map((t,i)=>`<tr class="${i<2?"q-row":""}">
+           <tr><th>#</th><th>Team</th><th>MP</th><th>Pts</th><th>RR</th></tr>
+           ${teams.map((t,i)=>`<tr class="${i<2?"q-row":""}" ${isAdmin?`onclick="editStandingRow('${gid}',${i})" style="cursor:pointer"`:""}">
              <td>${i+1}</td>
-             <td style="font-size:10px">${T[t.id]}</td>
-             <td>${t.w}</td><td>${t.l}</td>
+             <td style="font-size:10px">${t.name}</td>
+             <td>${t.mp}</td>
              <td class="pts-val">${t.pts}</td>
+             <td style="color:${t.rr>=0?"var(--green)":"var(--red)"};font-size:11px">${t.rr>=0?"+":""}${t.rr}</td>
            </tr>`).join("")}
          </table>
+         <div id="sedit-${gid}" style="display:none;padding:8px;background:rgba(200,230,0,.04);border-top:1px solid rgba(200,230,0,.12)"></div>
        </div>`;
      }).join("")}</div>`;
+}
+
+function editStandingRow(gid, idx){
+  if(!isAdmin) return;
+  const container = document.getElementById(`sedit-${gid}`);
+  const t = standings[gid][idx];
+  container.style.display="block";
+  container.innerHTML=`
+    <div style="font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:700">Editing: ${t.name}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <label style="font-size:11px;color:var(--muted)">Team:</label>
+      <input id="sname-${gid}-${idx}" style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:11px;width:160px" value="${t.name}"/>
+      <label style="font-size:11px;color:var(--muted)">MP:</label>
+      <input id="smp-${gid}-${idx}" type="number" min="0" max="10" style="width:44px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:12px;text-align:center" value="${t.mp}"/>
+      <label style="font-size:11px;color:var(--muted)">Pts:</label>
+      <input id="spts-${gid}-${idx}" type="number" min="0" max="20" style="width:44px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:12px;text-align:center" value="${t.pts}"/>
+      <label style="font-size:11px;color:var(--muted)">RR:</label>
+      <input id="srr-${gid}-${idx}" type="number" min="-99" max="99" style="width:52px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:12px;text-align:center" value="${t.rr}"/>
+      <button class="btn btn-green btn-sm" onclick="saveStanding('${gid}',${idx})">Save</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('sedit-${gid}').style.display='none'">Close</button>
+    </div>`;
+}
+
+function saveStanding(gid, idx){
+  standings[gid][idx].name = document.getElementById(`sname-${gid}-${idx}`).value || standings[gid][idx].name;
+  standings[gid][idx].mp = parseInt(document.getElementById(`smp-${gid}-${idx}`).value)||0;
+  standings[gid][idx].pts = parseInt(document.getElementById(`spts-${gid}-${idx}`).value)||0;
+  standings[gid][idx].rr = parseInt(document.getElementById(`srr-${gid}-${idx}`).value)||0;
+  // Re-sort by pts desc, then rr desc
+  standings[gid].sort((a,b)=>b.pts-a.pts||b.rr-a.rr);
+  save(); renderStandings(); toast("Standings updated ✓");
 }
 
 // ── RENDER KNOCKOUT ──────────────────────────────────────
 function renderKnockout(){
   const kos = matches.filter(m=>["qf","sf","final"].includes(m.stage));
+  const adminNote = isAdmin ? `<div style="font-size:11px;color:var(--accent);margin-bottom:10px;padding:6px 10px;background:rgba(200,230,0,.07);border-radius:6px;border:1px solid rgba(200,230,0,.2)">✏️ Admin mode: tap any match card to edit teams & scores</div>` : "";
   document.getElementById("tab-knockout").innerHTML =
-    `<div style="margin-bottom:12px"></div>${kos.map(m=>matchCard(m)).join("")}`;
+    `<div style="margin-bottom:12px"></div>${adminNote}${kos.map(m=>matchCard(m)).join("")}`;
 }
 
 // ── RENDER BRACKET ───────────────────────────────────────
 function renderBracket(){
   function bm(m,lbl){
-    const t1=m.t1?T[m.t1]:(m.slot?(m.slot.split(" vs ")[0]):"TBD");
-    const t2=m.t2?T[m.t2]:(m.slot?(m.slot.split(" vs ")[1]):"TBD");
-    const w1=m.status==="done"&&m.s1!==null&&m.s1>m.s2;
-    const w2=m.status==="done"&&m.s2!==null&&m.s2>m.s1;
-    return `<div class="b-match">
-      <div class="b-lbl">${lbl}</div>
-      <div class="b-team ${w1?"w":""}"><span class="b-team-name">${t1}</span><span class="b-score">${m.s1!==null?m.s1:"–"}</span></div>
-      <div class="b-team ${w2?"w":""}"><span class="b-team-name">${t2}</span><span class="b-score">${m.s2!==null?m.s2:"–"}</span></div>
+    const t1=m.t1n||(m.slot?(m.slot.split(" vs ")[0]):"TBD");
+    const t2=m.t2n||(m.slot?(m.slot.split(" vs ")[1]):"TBD");
+    const w1=m.status==="done"&&m.s1!==null&&m.s1!==undefined&&m.s1>m.s2;
+    const w2=m.status==="done"&&m.s2!==null&&m.s2!==undefined&&m.s2>m.s1;
+    const adminClick = isAdmin ? `onclick="toggleEdit('${m.id}')" style="cursor:pointer"` : "";
+    return `<div class="b-match" ${adminClick}>
+      <div class="b-lbl">${lbl}${isAdmin?' ✏️':''}</div>
+      <div class="b-team ${w1?"w":""}"><span class="b-team-name">${t1}</span><span class="b-score">${m.s1!==null&&m.s1!==undefined?m.s1:"–"}</span></div>
+      <div class="b-team ${w2?"w":""}"><span class="b-team-name">${t2}</span><span class="b-score">${m.s2!==null&&m.s2!==undefined?m.s2:"–"}</span></div>
+      ${isAdmin ? `<div id="ep-b-${m.id}" style="display:none;padding:8px;background:rgba(200,230,0,.04);border-top:1px solid rgba(200,230,0,.12)">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0">
+          <input class="team-inp" id="t1n-${m.id}" type="text" value="${m.t1n||''}" placeholder="Team 1"/>
+          <input class="team-inp" id="t2n-${m.id}" type="text" value="${m.t2n||''}" placeholder="Team 2"/>
+          <input class="score-inp" id="s1-${m.id}" type="number" min="0" max="99" value="${m.s1!==null&&m.s1!==undefined?m.s1:''}" placeholder="S1"/>
+          <span style="color:var(--muted)">–</span>
+          <input class="score-inp" id="s2-${m.id}" type="number" min="0" max="99" value="${m.s2!==null&&m.s2!==undefined?m.s2:''}" placeholder="S2"/>
+          <select class="status-sel" id="st-${m.id}">
+            <option value="pending" ${m.status==="pending"?"selected":""}>Upcoming</option>
+            <option value="live" ${m.status==="live"?"selected":""}>● Live</option>
+            <option value="done" ${m.status==="done"?"selected":""}>Final</option>
+          </select>
+          <button class="btn btn-green btn-sm" onclick="saveScore('${m.id}',event)">Save</button>
+        </div>
+      </div>` : ""}
     </div>`;
   }
+
   const qfs=matches.filter(m=>m.stage==="qf");
   const sfs=matches.filter(m=>m.stage==="sf");
   const fin=matches.find(m=>m.id==="FIN");
+  const adminNote = isAdmin ? `<div style="font-size:11px;color:var(--accent);margin-bottom:10px;padding:6px 10px;background:rgba(200,230,0,.07);border-radius:6px;border:1px solid rgba(200,230,0,.2)">✏️ Admin mode: tap any bracket card to edit</div>` : "";
+
   document.getElementById("tab-bracket").innerHTML=`
-    <div style="margin-bottom:12px"></div>
+    <div style="margin-bottom:12px"></div>${adminNote}
     <div class="bracket-outer"><div class="bracket-flex">
       <div class="bracket-col">
         <div class="bracket-col-hdr">Quarterfinals</div>
@@ -405,6 +551,18 @@ function renderBracket(){
     </div></div>`;
 }
 
+// Override toggleEdit to also handle bracket edit panels
+const _origToggleEdit = window.toggleEdit;
+function toggleEdit(id){
+  if(!isAdmin)return;
+  // Try schedule/knockout edit panel
+  const ep=document.getElementById("ep-"+id);
+  if(ep){ ep.classList.toggle("open"); return; }
+  // Try bracket edit panel
+  const epb=document.getElementById("ep-b-"+id);
+  if(epb){ epb.style.display = epb.style.display==="none"?"block":"none"; return; }
+}
+
 // ── TOAST ────────────────────────────────────────────────
 function toast(msg,err){
   const el=document.getElementById("toast");
@@ -415,7 +573,8 @@ function toast(msg,err){
 // ── RENDER ALL ───────────────────────────────────────────
 function renderAll(){
   renderSchedule(); renderStandings(); renderKnockout();
-  if(!document.getElementById("tab-bracket").style.display||document.getElementById("tab-bracket").style.display!=="none") renderBracket();
+  const bracket=document.getElementById("tab-bracket");
+  if(bracket && bracket.style.display!=="none") renderBracket();
 }
 
 // ── AUTO REFRESH (viewers every 30s) ────────────────────
